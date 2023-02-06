@@ -24,11 +24,11 @@ log.setLevel(os.environ.get('LOG', 'INFO'))
 
 # Select model from command line
 
-model = 'm433ia' # Model used in the derived script (with symbols)
+model = 'm433ia'  # Model used in the derived script (with symbols)
 if len(sys.argv) > 1:
     model = sys.argv[1]
 
-model_layout = importlib.import_module('numpad_layouts.'+ model)
+model_layout = importlib.import_module('numpad_layouts.' + model)
 
 # Figure out devices from devices file
 
@@ -55,14 +55,17 @@ while tries > 0:
             if touchpad_detected == 1:
                 if "S: " in line:
                     # search device id
-                    device_id=re.sub(r".*i2c-(\d+)/.*$", r'\1', line).replace("\n", "")
-                    log.debug('Set touchpad device id %s from %s', device_id, line.strip())
+                    device_id = re.sub(r".*i2c-(\d+)/.*$",
+                                       r'\1', line).replace("\n", "")
+                    log.debug('Set touchpad device id %s from %s',
+                              device_id, line.strip())
 
                 if "H: " in line:
                     touchpad = line.split("event")[1]
                     touchpad = touchpad.split(" ")[0]
                     touchpad_detected = 2
-                    log.debug('Set touchpad id %s from %s', touchpad, line.strip())
+                    log.debug('Set touchpad id %s from %s',
+                              touchpad, line.strip())
 
             # Look for the keyboard (numlock) # AT Translated Set OR Asus Keyboard
             if keyboard_detected == 0 and ("Name=\"AT Translated Set 2 keyboard" in line or "Name=\"Asus Keyboard" in line):
@@ -74,7 +77,8 @@ while tries > 0:
                     keyboard = line.split("event")[1]
                     keyboard = keyboard.split(" ")[0]
                     keyboard_detected = 2
-                    log.debug('Set keyboard %s from %s', keyboard, line.strip())
+                    log.debug('Set keyboard %s from %s',
+                              keyboard, line.strip())
 
             # Stop looking if both have been found #
             if keyboard_detected == 2 and touchpad_detected == 2:
@@ -121,9 +125,10 @@ d_k = Device(fd_k)
 # Create a new keyboard device to send numpad events
 # KEY_5:6
 # KEY_APOSTROPHE:40
+# Special key names can be found in /usr/share/X11/xkb/keycodes/evdev
 # [...]
 percentage_key = EV_KEY.KEY_5
-calculator_key = EV_KEY.KEY_CALC
+playpause_key = EV_KEY.KEY_PLAYPAUSE
 
 if len(sys.argv) > 2:
     percentage_key = EV_KEY.codes[int(sys.argv[2])]
@@ -132,7 +137,7 @@ dev = Device()
 dev.name = "Asus Touchpad/Numpad"
 dev.enable(EV_KEY.KEY_LEFTSHIFT)
 dev.enable(EV_KEY.KEY_NUMLOCK)
-dev.enable(calculator_key)
+dev.enable(playpause_key)
 
 for col in model_layout.keys:
     for key in col:
@@ -150,7 +155,9 @@ BRIGHT_VAL = [hex(val) for val in [31, 24, 1]]
 
 
 def activate_numlock(brightness):
-    numpad_cmd = "i2ctransfer -f -y " + device_id + " w13@0x15 0x05 0x00 0x3d 0x03 0x06 0x00 0x07 0x00 0x0d 0x14 0x03 " + BRIGHT_VAL[brightness] + " 0xad"
+    numpad_cmd = "i2ctransfer -f -y " + device_id + \
+        " w13@0x15 0x05 0x00 0x3d 0x03 0x06 0x00 0x07 0x00 0x0d 0x14 0x03 " + \
+        BRIGHT_VAL[brightness] + " 0xad"
     events = [
         InputEvent(EV_KEY.KEY_NUMLOCK, 1),
         InputEvent(EV_SYN.SYN_REPORT, 0)
@@ -161,7 +168,8 @@ def activate_numlock(brightness):
 
 
 def deactivate_numlock():
-    numpad_cmd = "i2ctransfer -f -y " + device_id + " w13@0x15 0x05 0x00 0x3d 0x03 0x06 0x00 0x07 0x00 0x0d 0x14 0x03 0x00 0xad"
+    numpad_cmd = "i2ctransfer -f -y " + device_id + \
+        " w13@0x15 0x05 0x00 0x3d 0x03 0x06 0x00 0x07 0x00 0x0d 0x14 0x03 0x00 0xad"
     events = [
         InputEvent(EV_KEY.KEY_NUMLOCK, 0),
         InputEvent(EV_SYN.SYN_REPORT, 0)
@@ -174,9 +182,9 @@ def deactivate_numlock():
 def launch_calculator():
     try:
         events = [
-            InputEvent(calculator_key, 1),
+            InputEvent(playpause_key, 1),
             InputEvent(EV_SYN.SYN_REPORT, 0),
-            InputEvent(calculator_key, 0),
+            InputEvent(playpause_key, 0),
             InputEvent(EV_SYN.SYN_REPORT, 0)
         ]
         udev.send_events(events)
@@ -189,7 +197,9 @@ def launch_calculator():
 # status 3 = max bright
 def change_brightness(brightness):
     brightness = (brightness + 1) % len(BRIGHT_VAL)
-    numpad_cmd = "i2ctransfer -f -y " + device_id + " w13@0x15 0x05 0x00 0x3d 0x03 0x06 0x00 0x07 0x00 0x0d 0x14 0x03 " + BRIGHT_VAL[brightness] + " 0xad"
+    numpad_cmd = "i2ctransfer -f -y " + device_id + \
+        " w13@0x15 0x05 0x00 0x3d 0x03 0x06 0x00 0x07 0x00 0x0d 0x14 0x03 " + \
+        BRIGHT_VAL[brightness] + " 0xad"
     subprocess.call(numpad_cmd, shell=True)
     return brightness
 
@@ -270,8 +280,9 @@ while True:
                 continue
 
             # else numpad mode is activated
-            col = math.floor(model_layout.cols * x / (maxx+1) )
-            row = math.floor((model_layout.rows * y / maxy) - model_layout.top_offset)
+            col = math.floor(model_layout.cols * x / (maxx+1))
+            row = math.floor((model_layout.rows * y / maxy) -
+                             model_layout.top_offset)
             # Ignore top_offset region #
             if row < 0:
                 continue
@@ -279,9 +290,10 @@ while True:
                 button_pressed = model_layout.keys[row][col]
             except IndexError:
                 # skip invalid row and col values
-                log.debug('Unhandled col/row %d/%d for position %d-%d', col, row, x, y)
+                log.debug(
+                    'Unhandled col/row %d/%d for position %d-%d', col, row, x, y)
                 continue
-            
+
             if button_pressed == EV_KEY.KEY_5:
                 button_pressed = percentage_key
 
