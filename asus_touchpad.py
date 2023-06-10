@@ -128,7 +128,7 @@ d_k = Device(fd_k)
 # Special key names can be found in /usr/share/X11/xkb/keycodes/evdev
 # [...]
 percentage_key = EV_KEY.KEY_5
-playpause_key = EV_KEY.KEY_PLAYPAUSE
+custom_key = EV_KEY.KEY_PLAYPAUSE
 
 if len(sys.argv) > 2:
     percentage_key = EV_KEY.codes[int(sys.argv[2])]
@@ -137,7 +137,7 @@ dev = Device()
 dev.name = "Asus Touchpad/Numpad"
 dev.enable(EV_KEY.KEY_LEFTSHIFT)
 dev.enable(EV_KEY.KEY_NUMLOCK)
-dev.enable(playpause_key)
+dev.enable(custom_key)
 
 for col in model_layout.keys:
     for key in col:
@@ -179,12 +179,12 @@ def deactivate_numlock():
     subprocess.call(numpad_cmd, shell=True)
 
 
-def launch_calculator():
+def launch_custom_action():
     try:
         events = [
-            InputEvent(playpause_key, 1),
+            InputEvent(custom_key, 1),
             InputEvent(EV_SYN.SYN_REPORT, 0),
-            InputEvent(playpause_key, 0),
+            InputEvent(custom_key, 0),
             InputEvent(EV_SYN.SYN_REPORT, 0)
         ]
         udev.send_events(events)
@@ -267,12 +267,12 @@ while True:
                     deactivate_numlock()
                 continue
 
-            # Check if caclulator was hit #
+            # Check if custom key was hit #
             elif (x < 0.06 * maxx) and (y < 0.07 * maxy):
                 if numlock:
                     brightness = change_brightness(brightness)
                 else:
-                    launch_calculator()
+                    launch_custom_action()
                 continue
 
             # If touchpad mode, ignore #
