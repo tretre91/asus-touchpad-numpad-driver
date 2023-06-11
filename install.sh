@@ -48,7 +48,7 @@ for i in $interfaces; do
     i2c_test=$($offTouchpadCmd 2>&1)
     if [ -z "$i2c_test" ]
     then
-        echo "sucess"
+        echo "success"
         touchpad_detected=true;
         break
     else
@@ -93,7 +93,9 @@ do
             exit 0
             ;;
         *)
-            echo "invalid option $REPLY";;
+            echo "invalid option $REPLY"
+            exit 1
+            ;;
     esac
 done
 
@@ -115,13 +117,34 @@ do
         "Quit")
             exit 0
             ;;
-        *) echo "invalid option $REPLY";;
+        *)
+            echo "invalid option $REPLY"
+            exit 1
+            ;;
     esac
 done
 
+echo
+echo "Set how long the numpad key should be held down before it activates"
+read -p "Activation delay (in seconds): " -e -i "0.4" numpad_delay
+if [[ -z "$numpad_delay" || -n "$(python3 -c "float('$numpad_delay')")" ]]
+then
+    echo "invalid duration $numpad_delay"
+    exit 1
+fi
+
+echo
+echo "Set how long the custom action key should be held down before it activates"
+read -p "Activation delay (in seconds): " -e -i "0.4" custom_key_delay
+if [[ -z "$custom_key_delay" || -n "$(python3 -c "float('$custom_key_delay')")" ]]
+then
+    echo "invalid duration $custom_key_delay"
+    exit 1
+fi
+
 
 echo "Add asus touchpad service in /etc/systemd/system/"
-cat asus_touchpad.service | LAYOUT=$model PERCENTAGE_KEY=$percentage_key envsubst '$LAYOUT $PERCENTAGE_KEY' > /etc/systemd/system/asus_touchpad_numpad.service
+cat asus_touchpad.service | LAYOUT=$model PERCENTAGE_KEY=$percentage_key NUMPAD_DELAY=$numpad_delay CUSTOM_KEY_DELAY=$custom_key_delay envsubst '$LAYOUT $PERCENTAGE_KEY $NUMPAD_DELAY $CUSTOM_KEY_DELAY' > /etc/systemd/system/asus_touchpad_numpad.service
 
 mkdir -p /usr/share/asus_touchpad_numpad-driver/numpad_layouts
 mkdir -p /var/log/asus_touchpad_numpad-driver
@@ -134,7 +157,7 @@ systemctl enable asus_touchpad_numpad
 
 if [[ $? != 0 ]]
 then
-    echo "Something gone wrong while enabling asus_touchpad_numpad.service"
+    echo "Something went wrong while enabling asus_touchpad_numpad.service"
     exit 1
 else
     echo "Asus touchpad service enabled"
@@ -143,7 +166,7 @@ fi
 systemctl restart asus_touchpad_numpad
 if [[ $? != 0 ]]
 then
-    echo "Something gone wrong while enabling asus_touchpad_numpad.service"
+    echo "Something went wrong while enabling asus_touchpad_numpad.service"
     exit 1
 else
     echo "Asus touchpad service started"
