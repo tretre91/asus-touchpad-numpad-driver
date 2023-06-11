@@ -3,16 +3,25 @@
 # Checking if the script is runned as root (via sudo or other)
 if [[ $(id -u) != 0 ]]
 then
-	echo "Please run the installation script as root (using sudo for example)"
-	exit 1
+    echo "Please run the installation script as root (using sudo for example)"
+    exit 1
 fi
 
-if [[ $(sudo apt install 2>/dev/null) ]]; then
-    echo 'apt is here' && sudo apt -y install libevdev2 python3-libevdev i2c-tools git
-elif [[ $(sudo pacman -h 2>/dev/null) ]]; then
-    echo 'pacman is here' && sudo pacman --noconfirm -S libevdev python-libevdev i2c-tools git
-elif [[ $(sudo dnf install 2>/dev/null) ]]; then
-    echo 'dnf is here' && sudo dnf -y install libevdev python-libevdev i2c-tools git
+if [[ $1 = "install_deps" ]]
+then
+    echo 'Installing dependencies'
+    if [[ $(command -v apt) ]]; then
+        echo 'Found apt' && sudo apt -y install python3-evdev i2c-tools git
+    elif [[ $(command -v pacman) ]]; then
+        echo 'Found pacman' && sudo pacman --noconfirm -S python-evdev i2c-tools git
+    elif [[ $(command -v dnf) ]]; then
+        echo 'Found dnf' && sudo dnf -y install python3-evdev i2c-tools git
+    fi
+
+    python3 -c "import pip"
+    if [[ $? == 0 ]]; then
+        echo 'Found pip' && python3 -m pip install pyudev
+    fi
 fi
 
 modprobe i2c-dev
@@ -20,8 +29,8 @@ modprobe i2c-dev
 # Checking if the i2c-dev module is successfuly loaded
 if [[ $? != 0 ]]
 then
-	echo "i2c-dev module cannot be loaded correctly. Make sur you have installed i2c-tools package"
-	exit 1
+    echo "i2c-dev module cannot be loaded correctly. Make sur you have installed i2c-tools package"
+    exit 1
 fi
 
 interfaces=$(for i in $(i2cdetect -l | grep DesignWare | sed -r "s/^(i2c\-[0-9]+).*/\1/"); do echo $i; done)
@@ -125,19 +134,19 @@ systemctl enable asus_touchpad_numpad
 
 if [[ $? != 0 ]]
 then
-	echo "Something gone wrong while enabling asus_touchpad_numpad.service"
-	exit 1
+    echo "Something gone wrong while enabling asus_touchpad_numpad.service"
+    exit 1
 else
-	echo "Asus touchpad service enabled"
+    echo "Asus touchpad service enabled"
 fi
 
 systemctl restart asus_touchpad_numpad
 if [[ $? != 0 ]]
 then
-	echo "Something gone wrong while enabling asus_touchpad_numpad.service"
-	exit 1
+    echo "Something gone wrong while enabling asus_touchpad_numpad.service"
+    exit 1
 else
-	echo "Asus touchpad service started"
+    echo "Asus touchpad service started"
 fi
 
 exit 0
